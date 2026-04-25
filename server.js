@@ -17,8 +17,17 @@ const proxies = [
   { path: '/location', target: process.env.LOCATION_SERVICE_URL || 'http://location-service:5005' },
   { path: '/nearby', target: process.env.LOCATION_SERVICE_URL || 'http://location-service:5005' },
   { path: '/reviews', target: process.env.REPUTATION_SERVICE_URL || 'http://reputation-service:5006' },
-  { path: '/socket.io', target: process.env.JOB_SERVICE_URL || 'http://job-service:5002', ws: true }, // WebSocket for Job Service
 ];
+
+// Explicitly define the WebSocket proxy for socket.io
+const wsProxy = createProxyMiddleware({
+  target: process.env.JOB_SERVICE_URL || 'http://job-service:5002',
+  changeOrigin: true,
+  ws: true,
+  logLevel: 'debug'
+});
+
+app.use('/socket.io', wsProxy);
 
 proxies.forEach(p => {
   app.use(p.path, createProxyMiddleware({
@@ -34,6 +43,9 @@ proxies.forEach(p => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`API Gateway running on port ${PORT}`);
 });
+
+// CRITICAL: Attach the upgrade event for WebSockets to work!
+server.on('upgrade', wsProxy.upgrade);
