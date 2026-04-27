@@ -41,17 +41,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Prepare frontend image and GitOps metadata
+      - name: Prepare api-gateway-service image and GitOps metadata
         id: image
         shell: bash
         run: |
           short_sha="$(echo "${{ github.sha }}" | cut -c1-7)"
-          service="frontend"
-          image="ghcr.io/medicojobs/medicojob-frontend"
-          values_file="helm/apps/frontend/values-dev.yaml"
+          service="api-gateway-service"
+          image="ghcr.io/medicojobs/medicojob-api-gateway-service"
+          values_file="helm/apps/api-gateway-service/values-dev.yaml"
 
           if [ "${{ inputs.service_name }}" != "$service" ]; then
-            echo "This workflow is configured for frontend only, got '${{ inputs.service_name }}'."
+            echo "This workflow is configured for api-gateway-service only, got '${{ inputs.service_name }}'."
             exit 1
           fi
 
@@ -122,7 +122,7 @@ jobs:
           sudo wget -q https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64 -O /usr/local/bin/yq
           sudo chmod +x /usr/local/bin/yq
 
-      - name: Update frontend Helm image tag in GitOps
+      - name: Update api-gateway-service Helm image tag in GitOps
         working-directory: gitops
         shell: bash
         env:
