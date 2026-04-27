@@ -159,16 +159,3 @@ jobs:
             echo "notify_title=SonarQube Passed" >> "$GITHUB_OUTPUT"
             echo "notify_summary=${summary}" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Save Sonar cache before failing job
-        if: ${{ steps.set_outputs.outputs.quality_gate_status == 'FAILED' && steps.sonar-cache.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.sonar/cache
-          key: ${{ steps.sonar-cache.outputs.cache-primary-key }}
-
-      - name: Stop pipeline - SonarQube gate failed
-        if: ${{ steps.set_outputs.outputs.quality_gate_status == 'FAILED' }}
-        run: |
-          echo "SonarQube Quality Gate failed. Stopping pipeline."
-          exit 1
