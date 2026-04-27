@@ -48,7 +48,7 @@ jobs:
           short_sha="$(echo "${{ github.sha }}" | cut -c1-7)"
           service="api-gateway-service"
           image="ghcr.io/medicojobs/medicojob-api-gateway-service"
-          values_file="helm/apps/api-gateway-service/values-dev.yaml"
+          values_file="helm/apps/api-gateway/values-dev.yaml"
 
           if [ "${{ inputs.service_name }}" != "$service" ]; then
             echo "This workflow is configured for api-gateway-service only, got '${{ inputs.service_name }}'."
