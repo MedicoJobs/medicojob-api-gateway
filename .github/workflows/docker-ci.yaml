@@ -1,4 +1,4 @@
-name: api-gateway Docker Image Pipeline
+name: frontend Docker Image Pipeline
 
 on:
   pull_request:
@@ -20,7 +20,8 @@ jobs:
     if: ${{ github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'build') }}
     uses: ./.github/workflows/docker_service_pipeline.yml
     with:
-      service_name: api-gateway
+      service_name: frontend
       service_path: .
     secrets:
       GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITOPS_TOKEN: ${{ secrets.GITOPS_TOKEN }}
