@@ -1,10 +1,6 @@
 name: api-gateway CI Pipeline
 
 on:
-  push:
-    branches:
-      - main
-      - feature-branch
   pull_request:
     types:
       - opened
