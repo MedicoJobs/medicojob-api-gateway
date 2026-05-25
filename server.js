@@ -8,13 +8,20 @@ const app = express();
 // Disable X-Powered-By header to avoid disclosing Express version
 app.disable('x-powered-by');
 
-const allowedOrigins = new Set(
-  [
-    process.env.FRONTEND_URL,
-    'http://localhost:3000',
-    'http://127.0.0.1:3000'
-  ].filter(Boolean)
-);
+const configuredOrigins = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || '')
+  .split(',')
+  .map(origin => origin.trim())
+  .filter(Boolean);
+
+const allowedOrigins = new Set([
+  ...configuredOrigins,
+  'http://medicojobs.online',
+  'http://medicojob.com',
+  'http://www.medicojobs.online',
+  'http://www.medicojob.com',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+]);
 
 const corsOptions = {
   origin: (origin, callback) => {
@@ -30,6 +37,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Health check
 app.get('/health', (req, res) => res.send('API Gateway is running'));
