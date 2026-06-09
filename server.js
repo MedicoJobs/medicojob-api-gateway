@@ -20,12 +20,26 @@ const allowedOrigins = new Set([
   'http://www.medicojobs.online',
   'http://www.medicojob.com',
   'http://localhost:3000',
-  'http://127.0.0.1:3000'
+  'http://localhost:3001',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001'
 ]);
+
+const serviceUrls = {
+  user: process.env.USER_SERVICE_URL || 'http://localhost:5001',
+  job: process.env.JOB_SERVICE_URL || 'http://localhost:5002',
+  matching: process.env.MATCHING_SERVICE_URL || 'http://localhost:5003',
+  availability: process.env.AVAILABILITY_SERVICE_URL || 'http://localhost:5004',
+  location: process.env.LOCATION_SERVICE_URL || 'http://localhost:5005',
+  reputation: process.env.REPUTATION_SERVICE_URL || 'http://localhost:5006',
+  course: process.env.COURSE_SERVICE_URL || 'http://localhost:5007',
+};
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.has(origin)) {
+    const isLocalDevOrigin = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin || '');
+
+    if (!origin || allowedOrigins.has(origin) || isLocalDevOrigin) {
       callback(null, true);
     } else {
       callback(new Error(`CORS blocked by policy for origin: ${origin}`));
@@ -36,7 +50,11 @@ const corsOptions = {
   credentials: true
 };
 
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
+app.use(cors({
+  origin: '*',
+  credentials: true
+}));
 app.options('*', cors(corsOptions));
 
 // Health check
@@ -44,19 +62,20 @@ app.get('/health', (req, res) => res.send('API Gateway is running'));
 
 // Proxy definitions
 const proxies = [
-  { path: '/auth', target: process.env.USER_SERVICE_URL || 'http://localhost:5001' },
-  { path: '/jobs', target: process.env.JOB_SERVICE_URL || 'http://localhost:5002', ws: true },
-  { path: '/match', target: process.env.MATCHING_SERVICE_URL || 'http://localhost:5003' },
-  { path: '/availability', target: process.env.AVAILABILITY_SERVICE_URL || 'http://localhost:5004' },
-  { path: '/location', target: process.env.LOCATION_SERVICE_URL || 'http://localhost:5005' },
-  { path: '/nearby', target: process.env.LOCATION_SERVICE_URL || 'http://localhost:5005' },
-  { path: '/reviews', target: process.env.REPUTATION_SERVICE_URL || 'http://localhost:5006' },
-  { path: '/socket.io', target: process.env.JOB_SERVICE_URL || 'http://localhost:5002', ws: true },
+  { path: '/auth', target: serviceUrls.user },
+  { path: '/jobs', target: serviceUrls.job, ws: true },
+  { path: '/match', target: serviceUrls.matching },
+  { path: '/availability', target: serviceUrls.availability },
+  { path: '/location', target: serviceUrls.location },
+  { path: '/nearby', target: serviceUrls.location },
+  { path: '/reviews', target: serviceUrls.reputation },
+  { path: '/courses', target: serviceUrls.course },
+  { path: '/socket.io', target: serviceUrls.job, ws: true },
 ];
 
 // Explicitly define the WebSocket proxy for socket.io
 const wsProxy = createProxyMiddleware({
-  target: process.env.JOB_SERVICE_URL || 'http://localhost:5002',
+  target: serviceUrls.job,
   changeOrigin: true,
   ws: true,
   logLevel: 'debug'
