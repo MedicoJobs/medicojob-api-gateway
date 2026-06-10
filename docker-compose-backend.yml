@@ -1,0 +1,159 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - medicojob-net
+    restart: always
+
+  api-gateway:
+    build:
+      context: ./medicojob-api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "5000:5000"
+    environment:
+      - USER_SERVICE_URL=http://user-service:5001
+      - JOB_SERVICE_URL=http://job-service:5002
+      - MATCHING_SERVICE_URL=http://matching-service:5003
+      - AVAILABILITY_SERVICE_URL=http://availability-service:5004
+      - LOCATION_SERVICE_URL=http://location-service:5005
+      - REPUTATION_SERVICE_URL=http://reputation-service:5006
+      - COURSE_SERVICE_URL=http://course-service:5007
+      - FRONTEND_URL=http://localhost:3000 # Keep as localhost for testing from host, or whatever their web EC2 ip is.
+    networks:
+      - medicojob-net
+    depends_on:
+      - user-service
+      - job-service
+      - matching-service
+      - availability-service
+      - location-service
+      - reputation-service
+      - course-service
+    restart: always
+
+  user-service:
+    build:
+      context: ./medicojob-user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/medicojob_user
+      - PORT=5001
+      - AWS_REGION=${AWS_REGION:-ap-south-1}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET:-medicojobs-prod-uploads-168614391879}
+      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - S3_PROFILE_IMAGES_PREFIX=profile-images/
+      - S3_RESUMES_PREFIX=resumes/
+    networks:
+      - medicojob-net
+    depends_on:
+      - mongodb
+    restart: always
+
+  job-service:
+    build:
+      context: ./medicojob-job-service
+      dockerfile: Dockerfile
+    container_name: job-service
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/medicojob_job
+      - PORT=5002
+    networks:
+      - medicojob-net
+    depends_on:
+      - mongodb
+    restart: always
+
+  matching-service:
+    build:
+      context: ./medicojob-matching-service
+      dockerfile: Dockerfile
+    container_name: matching-service
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/medicojob_matching
+      - PORT=5003
+    networks:
+      - medicojob-net
+    depends_on:
+      - mongodb
+    restart: always
+
+  availability-service:
+    build:
+      context: ./medicojob-availability-service
+      dockerfile: Dockerfile
+    container_name: availability-service
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/medicojob_availability
+      - PORT=5004
+    networks:
+      - medicojob-net
+    depends_on:
+      - mongodb
+    restart: always
+
+  location-service:
+    build:
+      context: ./medicojob-location-service
+      dockerfile: Dockerfile
+    container_name: location-service
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/medicojob_location
+      - PORT=5005
+    networks:
+      - medicojob-net
+    depends_on:
+      - mongodb
+    restart: always
+
+  reputation-service:
+    build:
+      context: ./medicojob-reputation-service
+      dockerfile: Dockerfile
+    container_name: reputation-service
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/medicojob_reputation
+      - PORT=5006
+    networks:
+      - medicojob-net
+    depends_on:
+      - mongodb
+    restart: always
+
+  course-service:
+    build:
+      context: ./medicojob-course-service
+      dockerfile: Dockerfile
+    container_name: course-service
+    environment:
+      - MONGO_URI_COURSE=mongodb://mongodb:27017/medicojob_course
+      - PORT=5007
+      - AWS_REGION=${AWS_REGION:-ap-south-1}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET:-medicojobs-prod-uploads-168614391879}
+      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - S3_COURSE_VIDEOS_PREFIX=course-videos/
+    networks:
+      - medicojob-net
+    depends_on:
+      - mongodb
+    restart: always
+
+volumes:
+  mongodb_data:
+
+networks:
+  medicojob-net:
+    driver: bridge
