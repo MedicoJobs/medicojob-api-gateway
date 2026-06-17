@@ -27,6 +27,7 @@ services:
       - LOCATION_SERVICE_URL=http://location-service:5005
       - REPUTATION_SERVICE_URL=http://reputation-service:5006
       - COURSE_SERVICE_URL=http://course-service:5007
+      - RESUME_SERVICE_URL=http://resume-service:5008
       - FRONTEND_URL=http://localhost:3000 # Keep as localhost for testing from host, or whatever their web EC2 ip is.
     networks:
       - medicojob-net
@@ -38,6 +39,7 @@ services:
       - location-service
       - reputation-service
       - course-service
+      - resume-service
     restart: always
 
   user-service:
@@ -151,8 +153,69 @@ services:
       - mongodb
     restart: always
 
+  resume-postgres:
+    image: postgres:16-alpine
+    container_name: resume-postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=medicojobs_resume
+    ports:
+      - "5432:5432"
+    volumes:
+      - resume_postgres_data:/var/lib/postgresql/data
+      - ./medicojob-resume-service/app/db/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    networks:
+      - medicojob-net
+    restart: always
+
+  resume-opensearch:
+    image: opensearchproject/opensearch:2.17.1
+    container_name: resume-opensearch
+    environment:
+      - discovery.type=single-node
+      - plugins.security.disabled=true
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=Admin@12345
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - resume_opensearch_data:/usr/share/opensearch/data
+    networks:
+      - medicojob-net
+    restart: always
+
+  resume-service:
+    build:
+      context: ./medicojob-resume-service
+      dockerfile: Dockerfile
+    container_name: resume-service
+    environment:
+      - PORT=5008
+      - JWT_SECRET=${JWT_SECRET:-change-me}
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@resume-postgres:5432/medicojobs_resume
+      - AWS_REGION=${AWS_REGION:-ap-south-1}
+      - S3_BUCKET=${AWS_S3_BUCKET:-medicojobs-prod-uploads-168614391879}
+      - BEDROCK_MODEL_ID=${BEDROCK_MODEL_ID:-anthropic.claude-3-5-sonnet-20240620-v1:0}
+      - OPENSEARCH_HOST=http://resume-opensearch:9200
+      - ENABLE_LLM=${ENABLE_LLM:-false}
+      - ENABLE_S3_UPLOAD=${ENABLE_S3_UPLOAD:-false}
+      - ENABLE_OPENSEARCH_INDEXING=${ENABLE_OPENSEARCH_INDEXING:-false}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    ports:
+      - "5008:5008"
+    networks:
+      - medicojob-net
+    depends_on:
+      - resume-postgres
+      - resume-opensearch
+    restart: always
+
 volumes:
   mongodb_data:
+  resume_postgres_data:
+  resume_opensearch_data:
 
 networks:
   medicojob-net:

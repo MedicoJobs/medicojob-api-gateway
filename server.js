@@ -32,6 +32,7 @@ const serviceUrls = {
   location: process.env.LOCATION_SERVICE_URL || 'http://localhost:5005',
   reputation: process.env.REPUTATION_SERVICE_URL || 'http://localhost:5006',
   course: process.env.COURSE_SERVICE_URL || 'http://localhost:5007',
+  resume: process.env.RESUME_SERVICE_URL || 'http://localhost:5008',
 };
 
 const corsOptions = {
@@ -69,6 +70,7 @@ const proxies = [
   { path: '/nearby', target: serviceUrls.location },
   { path: '/reviews', target: serviceUrls.reputation },
   { path: '/courses', target: serviceUrls.course },
+  { path: '/api/resume', target: serviceUrls.resume },
   { path: '/socket.io', target: serviceUrls.job, ws: true },
 ];
 
