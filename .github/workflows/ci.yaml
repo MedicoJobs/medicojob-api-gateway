@@ -1,6 +1,9 @@
-﻿name: ci.yaml - medicojob-api-gateway
+name: ci.yaml - medicojob-api-gateway
 
 on:
+  push:
+    branches:
+      - feature-branch
   pull_request:
     branches:
       - main
@@ -9,10 +12,6 @@ on:
       - synchronize
       - reopened
       - ready_for_review
-
-permissions:
-  contents: read
-  pull-requests: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -27,6 +26,7 @@ jobs:
   get_email:
     name: get-email
     runs-on: ubuntu-latest
+    permissions: {}
     steps:
       - name: Load notification email
         run: echo "Email notification settings loaded."
@@ -35,16 +35,19 @@ jobs:
     name: SonarQube code quality
     runs-on: ubuntu-latest
     needs: get_email
+    permissions:
+      contents: read
+      pull-requests: read
 
     steps:
       - name: Checkout service
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
         if: env.RUNTIME == 'node'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '20'
           cache: npm
@@ -78,7 +81,7 @@ jobs:
 
 
       - name: SonarCloud scan and quality gate
-        uses: SonarSource/sonarqube-scan-action@v7.1.0
+        uses: SonarSource/sonarqube-scan-action@299e4b793aaa83bf2aba7c9c14bedbb485688ec4
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
@@ -91,16 +94,18 @@ jobs:
     name: snyk-scan / snyk
     runs-on: ubuntu-latest
     needs: sonar
+    permissions:
+      contents: read
     env:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
     steps:
       - name: Checkout service
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Setup Node.js
         if: env.RUNTIME == 'node'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '20'
           cache: npm
@@ -112,7 +117,7 @@ jobs:
 
 
       - name: Setup Snyk
-        uses: snyk/actions/setup@master
+        uses: snyk/actions/setup@8e119fbb6c251787721d34ba683ed48eba792766
 
       - name: Snyk dependency scan
         shell: bash
@@ -129,6 +134,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: snyk_scan
     if: always()
+    permissions: {}
     steps:
       - name: Print Snyk result
         run: |
@@ -143,10 +149,12 @@ jobs:
       - snyk_scan
       - snyk_summary
     if: always() && (needs.sonar.result == 'failure' || needs.snyk_scan.result == 'failure')
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout service
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Resolve failure reason
         id: failure
@@ -181,7 +189,4 @@ jobs:
           failure_reason: |
             ${{ steps.failure.outputs.reason }}
             The pull request must not be merged until validation passes.
-
-
-
 

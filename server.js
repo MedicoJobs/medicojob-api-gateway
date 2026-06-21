@@ -51,11 +51,7 @@ const corsOptions = {
   credentials: true
 };
 
-// app.use(cors(corsOptions));
-app.use(cors({
-  origin: '*',
-  credentials: true
-}));
+app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
 // Health check
