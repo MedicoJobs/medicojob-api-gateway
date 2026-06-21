@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const cors = require('cors');
@@ -50,11 +51,7 @@ const corsOptions = {
   credentials: true
 };
 
-// app.use(cors(corsOptions));
-app.use(cors({
-  origin: '*',
-  credentials: true
-}));
+app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
 // Health check
