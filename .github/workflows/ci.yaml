@@ -52,7 +52,7 @@ jobs:
 
       - name: Install Node dependencies
         if: env.RUNTIME == 'node'
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Run Node tests when configured
         if: env.RUNTIME == 'node'
@@ -108,7 +108,7 @@ jobs:
 
       - name: Install Node dependencies
         if: env.RUNTIME == 'node'
-        run: npm ci
+        run: npm ci --ignore-scripts
 
 
       - name: Setup Snyk
