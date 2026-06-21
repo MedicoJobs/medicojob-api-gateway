@@ -1,6 +1,9 @@
 name: ci.yaml - medicojob-api-gateway
 
 on:
+  push:
+    branches:
+      - feature-branch
   pull_request:
     branches:
       - main
