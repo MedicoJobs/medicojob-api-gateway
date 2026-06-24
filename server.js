@@ -114,5 +114,10 @@ const server = app.listen(PORT, () => {
   console.log(`API Gateway running on port ${PORT}`);
 });
 
+// CRITICAL: Prevent AWS ALB connection resets and upload timeouts
+server.keepAliveTimeout = 650 * 1000; // 650 seconds (greater than ALB 600s)
+server.headersTimeout = 651 * 1000;   // 651 seconds
+server.timeout = 30 * 60 * 1000;      // 30 minutes for large uploads
+
 // CRITICAL: Attach the upgrade event for WebSockets to work!
 server.on('upgrade', wsProxy.upgrade);
