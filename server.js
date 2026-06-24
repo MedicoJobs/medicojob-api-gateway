@@ -1,8 +1,10 @@
+require('dotenv').config();
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const cors = require('cors');
 
 const app = express();
+const PROXY_TIMEOUT_MS = Number(process.env.PROXY_TIMEOUT_MS || 10 * 60 * 1000);
 
 // Disable X-Powered-By header to avoid disclosing Express version
 app.disable('x-powered-by');
@@ -50,11 +52,7 @@ const corsOptions = {
   credentials: true
 };
 
-// app.use(cors(corsOptions));
-app.use(cors({
-  origin: '*',
-  credentials: true
-}));
+app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
 // Health check
@@ -90,9 +88,23 @@ proxies.forEach(p => {
     changeOrigin: true,
     ws: p.ws || false,
     logLevel: 'debug',
+    timeout: PROXY_TIMEOUT_MS,
+    proxyTimeout: PROXY_TIMEOUT_MS,
     pathRewrite: (path, req) => {
       // Because app.use(path) strips the path, we use the original URL
       return req.originalUrl;
+    },
+    on: {
+      error: (err, req, res) => {
+        console.error(`Proxy error for ${req.method} ${req.originalUrl}:`, err.message);
+
+        if (!res.headersSent) {
+          res.status(502).json({
+            message: 'Upstream service is unavailable',
+            service: p.path,
+          });
+        }
+      }
     }
   }));
 });
